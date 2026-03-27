@@ -66,7 +66,14 @@ function render() {
     });
 
     root.innerHTML = `
-        <div class="header">
+        <header class="header" style="display: flex; flex-direction: column;">
+            <div class="logo-box">
+                <a><img src="images/image-1.png" alt="/"></a>
+                <div class="title-box">
+                    <h1 style="margin: 0; padding: 0;">REACT PIZZA</h1>
+                    <p style="margin: 0; padding: 0;">самая вкусная пицца во вселенной</p>
+                </div>
+            </div>
             <div class="categories">
                 ${categories.map((cat, i) => `
                     <button class="${state.activeCaregory === i ? 'active' : ''}"
@@ -78,9 +85,9 @@ function render() {
                 <option value="price" ${state.sortBy === 'price' ? 'selected' : ''}>по цене</option>
                 <option value="name" ${state.sortBy === 'name' ? 'selected' : ''}>по алфавиту</option>
             </select>
-        </div>
+        </header>
 
-        <div class="pizza-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div class="pizza-list" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
             ${filteredPizzas.map(pizza => {
                 const current = state.selectedParams[pizza.id] || { type: 0, size: 0};
                 return `
