@@ -21,7 +21,9 @@ let state = {
     activeCategory: 0,
     sortBy: 'rating',
     cart: [],
-    selectedParams: {} 
+    selectedParams: {},
+    isSortOpen: false,
+    isCartOpen: false
 };
 window.toggleSort = () => {
     state.isSortOpen = !state.isSortOpen;
@@ -34,7 +36,6 @@ window.setSort = (val) => {
 };
 // 4. ЛОГИКА (ACTIONS)
 window.setCategory = (i) => { state.activeCategory = i; render(); };
-window.setSort = (val) => { state.sortBy = val; render(); };
 window.setParam = (id, key, val) => {
     if (!state.selectedParams[id]) state.selectedParams[id] = { type: 0, size: 0 };
     state.selectedParams[id][key] = val;
@@ -46,11 +47,68 @@ window.addToCart = (id) => {
     state.cart.push({ ...pizza, tName: types[p.type], sVal: sizes[p.size], uid: Date.now() + Math.random() });
     render();
 };
+window.updateCount = (id, tName, sVal, delta) => {
+    if (delta === 1) {
+        const item = state.cart.find(i => i.id === id && i.tName === tName && i.sVal === sVal);
+        state.cart.push({ ...item, uid: Date.now() + Math.random() });
+    } else {
+        const index = state.cart.findIndex(i => i.id === id && i.tName === tName && i.sVal === sVal);
+        if (index !== -1) state.cart.splice(index, 1);
+    }
+    render();
+};
+
+window.clearCart = () => {
+    state.cart = [];
+    render();
+};
+
+window.toggleCart = (val) => {
+  state.isCartOpen = val;
+
+  // Блокировка/разблокировка скролла
+  document.body.classList.toggle('no-scroll', val);
+
+  const overlay = document.querySelector('.cart-overlay');
+  if (overlay) {
+    if (val) {
+      overlay.classList.add('open');
+    } else {
+      overlay.classList.remove('open');
+    }
+  }
+  render();
+};
 
 // Считаем, сколько штук этой пиццы в корзине
 const getCount = (id) => state.cart.filter(item => item.id === id).length;
 
 // 5. ОТРИСОВКА
+function renderPizzaCard(pizza) {
+    const sel = state.selectedParams[pizza.id] || { type: 0, size: 0 };
+    const count = getCount(pizza.id);
+    return `
+        <div style="text-align: center; max-width: 280px; width: 100%; padding: 0; margin: 0;">
+            <img src="${pizza.img}" style="width: 260px; padding: 0; margin: 0;">
+            <h3 style="padding: 11px 0 22px; box-sizing: border-box; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.01em; text-align: center;">${pizza.name}</h3>
+            <div style="background: #f3f3f3; display: flex; flex-direction: column; gap: 7px; border-radius: 10px; padding: 7px 5px; box-sizing: border-box; margin: 0; height: 85px;">
+                <ul style="display: flex; list-style: none; padding: 0; margin: 0;">
+                    ${types.map((t, i) => `<li onclick="setParam(${pizza.id}, 'type', ${i})" style="flex: 1; padding: 8px; box-sizing: border-box; margin: 0; cursor: pointer; font-size: 14px; font-weight: bold; border-radius: 5px; background: ${sel.type === i ? 'white' : 'transparent'}; box-shadow: ${sel.type === i ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'};">${t}</li>`).join('')}
+                </ul>
+                <ul style="display: flex; list-style: none; padding: 0; margin: 0;">
+                    ${sizes.map((s, i) => `<li onclick="setParam(${pizza.id}, 'size', ${i})" style="flex: 1; padding: 8px; box-sizing: border-box; margin: 0; cursor: pointer; font-size: 14px; font-weight: bold; border-radius: 5px; background: ${sel.size === i ? 'white' : 'transparent'}; box-shadow: ${sel.size === i ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'};">${s} см.</li>`).join('')}
+                </ul>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 17px 0; box-sizing: border-box;">
+                <b style="font-weight: 700; font-size: 22px; letter-spacing: 0.01em; color: #000;">от ${pizza.price} ₽</b>
+                <button onclick="addToCart(${pizza.id})" style="background: white; border: 1px solid #fe5f1e; color: #fe5f1e; padding: 10px 18px; box-sizing: border-box; border-radius: 30px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    + Добавить ${count > 0 ? `<span style="background: #fe5f1e; color: #fff; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;">${count}</span>` : ''}
+                </button>
+            </div>
+        </div>
+    `;
+}
+
 function render() {
     if (!root) return;
     const totalAmount = state.cart.reduce((sum, item) => sum + item.price, 0);
@@ -70,7 +128,7 @@ function render() {
                     <p style="margin:0; color: #7b7b7b;">самая вкусная пицца во вселенной</p>
                 </div>
             </div>
-            <div style="display: flex; align-items: center; background: #fe5f1e; color: white; padding: 12px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; gap: 12px;">
+            <div onclick="toggleCart(true)" style="display: flex; align-items: center; background: #fe5f1e; color: white; padding: 12px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; gap: 12px;">
                 <span>${totalAmount} ₽</span>
                 <div style="width: 1px; height: 25px; background: rgba(255, 255, 255, 0.25);"></div>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -118,29 +176,62 @@ function render() {
         <h2>Все пиццы</h2>
 
         <div class="pizza-list" style="padding: 0 65px; box-sizing: border-box; margin: 0;">
-            ${filtered.map(pizza => {
-                const sel = state.selectedParams[pizza.id] || { type: 0, size: 0 };
-                const count = getCount(pizza.id);
-                return `
-                <div style="text-align: center; max-width: 280px; width: 100%; padding: 0; margin: 0;">
-                    <img src="${pizza.img}" style="width: 260px; padding: 0; margin: 0;">
-                    <h3 style="padding: 11px 0 22px; box-sizing: border-box; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.01em; text-align: center;">${pizza.name}</h3>
-                    <div style="background: #f3f3f3; display: flex; flex-direction: column; gap: 7px; border-radius: 10px; padding: 7px 5px; box-sizing: border-box; margin: 0; height: 85px;">
-                        <ul style="display: flex; list-style: none; padding: 0; margin: 0;">
-                            ${types.map((t, i) => `<li onclick="setParam(${pizza.id}, 'type', ${i})" style="flex: 1; padding: 8px; box-sizing: margin: 0; border-box; cursor: pointer; font-size: 14px; font-weight: bold; border-radius: 5px; background: ${sel.type === i ? 'white' : 'transparent'}; box-shadow: ${sel.type === i ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'};">${t}</li>`).join('')}
-                        </ul>
-                        <ul style="display: flex; list-style: none; padding: 0; margin: 0;">
-                            ${sizes.map((s, i) => `<li onclick="setParam(${pizza.id}, 'size', ${i})" style="flex: 1; padding: 8px; box-sizing: margin: 0; border-box; cursor: pointer; font-size: 14px; font-weight: bold; border-radius: 5px; background: ${sel.size === i ? 'white' : 'transparent'}; box-shadow: ${sel.size === i ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'};">${s} см.</li>`).join('')}
-                        </ul>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 17px 0; box-sizing: border-box;">
-                        <b style="font-weight: 700; font-size: 22px; letter-spacing: 0.01em; color: #000;">от ${pizza.price} ₽</b>
-                        <button onclick="addToCart(${pizza.id})" style="background: white; border: 1px solid #fe5f1e; color: #fe5f1e; padding: 10px 18px; box-sizing: border-box; border-radius: 30px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                            + Добавить ${count > 0 ? `<span style="background: #fe5f1e; color: #fff; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;">${count}</span>` : ''}
-                        </button>
-                    </div>
-                </div>`;
-            }).join('')}
+            ${filtered.map(pizza => renderPizzaCard(pizza)).join('')}
+        </div
+
+        ${state.isCartOpen ? renderCartModal(totalAmount) : ''}
+    `;
+}
+
+function renderCartModal(total) {
+    const grouped = state.cart.reduce((acc, item) => {
+        const key = `${item.id}-${item.tName}-${item.sVal}`;
+        if (!acc[key]) {
+            acc[key] = { ...item, count: 0, totalPrice: 0 };
+        }
+        acc[key].count++;
+        acc[key].totalPrice = acc[key].price * acc[key].count;
+        return acc;
+    }, {});
+
+    return `
+        <div class="cart-overlay ${state.isCartOpen ? 'open' : ''}" onclick="toggleCart(false)">
+            <div class="cart-modal" onclick="event.stopPropagation()">
+            <button class="close-btn" onclick="toggleCart(false)" style="
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                background: none;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                color: #7b7b7b;
+                ">×</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                    <h2 style="margin:0;">🛒 Корзина</h2>
+                    <span onclick="clearCart()" style="color: #b6b6b6; cursor: pointer;">🗑️ Очистить корзину</span>
+                </div>
+                <div style="max-height: 450px; overflow-y: auto;">
+                    ${state.cart.length === 0 ? '<p style="text-align:center; padding: 40px;">Корзина пуста 🍕</p>' : Object.values(grouped).map(item => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-top: 1px solid #f6f6f6;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <img src="${item.img}" style="width: 80px;">
+                                <div><b>${item.name}</b><br><small>${item.tName}, ${item.sVal} см.</small></div>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button onclick="updateCount(${item.id}, '${item.tName}', ${item.sVal}, -1)" class="circle-btn">-</button>
+                                <b>${item.count}</b>
+                                <button onclick="updateCount(${item.id}, '${item.tName}', ${item.sVal}, 1)" class="circle-btn">+</button>
+                            </div>
+                            <b>${item.price * item.count} ₽</b>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="margin-top: 30px; border-top: 2px solid #f6f6f6; padding-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin:0;">Итого: <span style="color:#fe5f1e;">${total} ₽</span></h3>
+                    <button class="add-btn" style="background:#fe5f1e; color:white; border:none;" onclick="toggleCart(false)">Вернуться назад</button>
+                </div>
+            </div>
         </div>
     `;
 }
