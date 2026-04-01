@@ -42,17 +42,23 @@ const addToCart = (id) => {
     render();
 };
 
-const updateCount = (id, tName, sVal, delta) => {
+const updateCount = (id, type, size, delta) => {
     id = Number(id);
+    size = Number(size);
     delta = Number(delta);
-    sVal = Number(sVal);
-    
+
     if (delta > 0) {
-        const item = state.cart.find(i => i.id === id && i.tName === tName && i.sVal === sVal);
+        const item = state.cart.find(i => i.id === id && i.tName === type && i.sVal === size);
         if (item) state.cart.push({ ...item, uid: Date.now() + Math.random() });
     } else {
-        const index = state.cart.findIndex(i => i.id === id && i.tName === tName && i.sVal === sVal);
-        if (index !== -1) state.cart.splice(index, 1);
+        if (Math.abs(delta) === 1) {
+            const index = state.cart.findIndex(i => i.id === id && i.tName === type && i.sVal === size);
+            if (index !== -1) state.cart.splice(index, 1);
+        } else {
+            state.cart = state.cart.filter(i => 
+                !(i.id === id && i.tName === type && i.sVal === size)
+            );
+        }
     }
     render();
 };
@@ -244,6 +250,11 @@ function renderCartModal(totalAmount) {
     acc[key].totalPrice = acc[key].price * acc[key].count;
     return acc;
   }, {}));
+
+    grouped.sort((a, b) => {
+        if (a.id !== b.id) return a.id - b.id;
+        return a.tName.localeCompare(b.tName);
+    });
 
     return `
     <div class="cart-overlay open" data-action="toggleCart" data-val="false" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: flex; justify-content: center; align-items: center;">
