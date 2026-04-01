@@ -185,20 +185,49 @@ function render() {
     `;
 }
 
+
 function renderCartModal(total) {
+  if (state.cart.length === 0) {
+    return `
+       <div class="cart-overlay open" onclick="toggleCart(false)">
+            <div class="cart-modal" style="height: 82vh;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <img src="images/image-1.png" style="width: 38px;">
+                    <div>
+                        <h1 style="margin:0; font-size: 24px; font-weight: 800; text-transform: uppercase;">React Pizza</h1>
+                        <p style="margin:0; color: #7b7b7b; font-family: 'Proxima Nova', Arial, sans-serif;">самая вкусная пицца во вселенной</p>
+                    </div>
+                 </div>
+                <div style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; margin-top: 100px;">
+                    <h2 style="font-family: 'Proxima Nova', Arial, sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.01em; color: #000; margin-bottom: 10px; padding: 0;">Корзина пустая 😕</h2>
+                    <p style="font-family: 'Proxima Nova', Arial, sans-serif; font-size: 18px; color: #777; line-height: 145%; letter-spacing: 0.01em; text-align: center; margin: 0; padding: 0;">
+                        Вероятней всего, вы не заказывали ещё пиццу.<br>
+                        Для того, чтобы заказать пиццу, перейди на главную страницу.
+                    </p>
+                    <img src="images/empty-cart.png" alt="Пустая корзина" style="max-width: 300px; width:100%; max-height: 255px; padding-top: 47px; box-sizing: border-box; margin: 0;">
+                    <button 
+                        onclick="toggleCart(false)" 
+                        style="font-family: 'Proxima Nova', Arial, sans-serif; margin-top: 74px; padding: 14px 30px 17px; justify-content: center; background: #282828; border-radius: 30px; width: 210px; height: 46px; color: white; font-size: 16px; cursor: pointer; font-weight: 700; letter-spacing: 0.01em; text-align: center; border: none;">
+                        Вернуться назад
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+  } else {
+    // Здесь остаётся ваш текущий код для заполненной корзины
     const grouped = Object.values(state.cart.reduce((acc, item) => {
-        const key = `${item.id}-${item.tName}-${item.sVal}`;
-        if (!acc[key]) acc[key] = { ...item, count: 0, totalPrice: 0 };
-        acc[key].count++;
-        acc[key].totalPrice = acc[key].price * acc[key].count;
-        return acc;
+      const key = `${item.id}-${item.tName}-${item.sVal}`;
+      if (!acc[key]) acc[key] = { ...item, count: 0, totalPrice: 0 };
+      acc[key].count++;
+      acc[key].totalPrice = acc[key].price * acc[key].count;
+      return acc;
     }, {}));
 
+    
     return `
-        <div class="cart-overlay open" onclick="toggleCart(false)" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: flex; justify-content: center; align-items: center;">
-            <div class="cart-modal" onclick="event.stopPropagation()" style="background: white; width: 100%; max-width: 1333px; height: 90vh; border-radius: 10px; display: flex; flex-direction: column;">
-                
-                <!-- Шапка модалки (1333px) -->
+        <div class="cart-overlay open" onclick="toggleCart(false)" style="position: fixed; top: 0; left: 0; width: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: flex; justify-content: center; align-items: center;">
+            <div class="cart-modal" onclick="event.stopPropagation()" style="background: white; width: 100%; max-width: 1333px; height: 82vh; border-radius: 10px; display: flex; flex-direction: column;">
                 <div style="padding: 42px 65px 40px; display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <img src="images/image-1.png" style="width: 38px;">
@@ -275,6 +304,7 @@ function renderCartModal(total) {
             </div>
         </div>
     `;
+}
 }
 
 render();
